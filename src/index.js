@@ -36,17 +36,21 @@ function onload(entries, observer) {
     if (entry.isIntersecting) {
       page += 1;
       console.log(page);
-      getUser(imgSearch, page).then(data => {
-        makeMarcup(data.hits);
-        // getFlowingScroll();
-        lightbox.refresh();
-        if (page * data.hits.length >= data.totalHits) {
-          observer.unobserve(guardEL);
-          return Notify.failure(
-            "We're sorry, but you've reached the end of search results."
-          );
-        }
-      });
+      getUser(imgSearch, page)
+        .then(data => {
+          makeMarcup(data.hits);
+          // getFlowingScroll();
+          lightbox.refresh();
+          if (page * data.hits.length >= data.totalHits) {
+            observer.unobserve(guardEL);
+            return Notify.failure(
+              "We're sorry, but you've reached the end of search results."
+            );
+          }
+        })
+        .catch(error => {
+          console.error(error);
+        });
     }
   });
 }
@@ -66,19 +70,23 @@ function onFormElSubmit(evt) {
 
   imgSearch = evt.currentTarget.elements.searchQuery.value;
 
-  getUser(imgSearch).then(data => {
-    if (data.totalHits === 0 || !imgSearch) {
-      return Notify.failure(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
-    }
-    Notify.success(`"Hooray! We found ${data.totalHits} images."`);
+  getUser(imgSearch)
+    .then(data => {
+      if (data.totalHits === 0 || !imgSearch) {
+        return Notify.failure(
+          'Sorry, there are no images matching your search query. Please try again.'
+        );
+      }
+      Notify.success(`"Hooray! We found ${data.totalHits} images."`);
 
-    makeMarcup(data.hits);
-    // getFlowingScroll()
-    lightbox.refresh();
-    observer.observe(guardEL);
-  });
+      makeMarcup(data.hits);
+      // getFlowingScroll()
+      lightbox.refresh();
+      observer.observe(guardEL);
+    })
+    .catch(error => {
+      console.error(error);
+    });
 }
 
 // ПОЛУЧЕНИЕ ИНФОРМАЦИИ ОТ БЕКЭНДА
