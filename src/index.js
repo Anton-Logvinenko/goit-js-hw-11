@@ -29,7 +29,7 @@ let options = {
 
 let observer = new IntersectionObserver(onload, options);
 
-function onload(entries, observer) {
+async function onload(entries, observer) {
   try {
     entries.forEach(async entry => {
       if (entry.isIntersecting) {
