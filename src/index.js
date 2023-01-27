@@ -30,69 +30,73 @@ let options = {
 let observer = new IntersectionObserver(onload, options);
 
 function onload(entries, observer) {
-  entries.forEach(entry => {
-    console.log(entry);
+  try {
+    entries.forEach(async entry => {
+      if (entry.isIntersecting) {
+        page += 1;
+        console.log(page);
 
-    if (entry.isIntersecting) {
-      page += 1;
-      console.log(page);
-      getUser(imgSearch, page)
-        .then(data => {
-          makeMarcup(data.hits);
-          // getFlowingScroll();
-          lightbox.refresh();
-          if (page * data.hits.length >= data.totalHits) {
-            observer.unobserve(guardEL);
-            return Notify.failure(
-              "We're sorry, but you've reached the end of search results."
-            );
-          }
-        })
-        .catch(error => {
-          console.error(error);
-        });
-    }
-  });
+        const data = await getImgSearch(imgSearch, page);
+
+        makeMarcup(data.hits);
+        lightbox.refresh();
+        // getFlowingScroll();
+        if (page * 40 >= data.totalHits) {
+          observer.unobserve(guardEL);
+          return Notify.failure(
+            "We're sorry, but you've reached the end of search results."
+          );
+        }
+      }
+    });
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 // САБМИТ ФОРМЫ
 
 formEl.addEventListener('submit', onFormElSubmit);
 
-function onFormElSubmit(evt) {
-  evt.preventDefault();
+async function onFormElSubmit(evt) {
+  try {
+    evt.preventDefault();
 
-  // // `отключтить   observer т.к. срабатывает после 2-го сабмита`;
-  observer.unobserve(guardEL);
+    // // `отключтить   observer т.к. срабатывает после 2-го сабмита`;
+    observer.unobserve(guardEL);
 
-  page = 1;
-  galleryEl.innerHTML = '';
+    page = 1;
+    galleryEl.innerHTML = '';
 
-  imgSearch = evt.currentTarget.elements.searchQuery.value;
+    imgSearch = evt.currentTarget.elements.searchQuery.value.trim();
+    const data = await getImgSearch(imgSearch);
 
-  getUser(imgSearch)
-    .then(data => {
-      if (data.totalHits === 0 || !imgSearch) {
-        return Notify.failure(
-          'Sorry, there are no images matching your search query. Please try again.'
-        );
-      }
-      Notify.success(`"Hooray! We found ${data.totalHits} images."`);
+    if (data.totalHits === 0) {
+      return Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    }
+    Notify.success(`"Hooray! We found ${data.totalHits} images."`);
 
-      makeMarcup(data.hits);
-      // getFlowingScroll()
-      lightbox.refresh();
-      observer.observe(guardEL);
-    })
-    .catch(error => {
-      console.error(error);
-    });
+    makeMarcup(data.hits);
+    // getFlowingScroll();
+    lightbox.refresh();
+    observer.observe(guardEL);
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 // ПОЛУЧЕНИЕ ИНФОРМАЦИИ ОТ БЕКЭНДА
 
-async function getUser(imgSearch, page = 1) {
+async function getImgSearch(imgSearch, page = 1) {
   try {
+    if (!imgSearch) {
+      return Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    }
+
     const BASE_URL =
       'https://pixabay.com/api/?key=33025622-104a63b9949010de5d5c4e66d';
     const KEY = '33025622-104a63b9949010de5d5c4e66d';
@@ -109,11 +113,11 @@ async function getUser(imgSearch, page = 1) {
       'content-type': 'application/json',
     };
     const response = await axios.get(`${BASE_URL}`, { params, headers });
+    console.log(response);
 
-    console.log(response.data);
     return response.data;
-  } catch (error) {
-    console.error(error);
+  } catch (err) {
+    console.error(err);
   }
 }
 
